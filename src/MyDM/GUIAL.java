@@ -14,7 +14,7 @@ class GUIAL implements ActionListener {
     GUI gui;
     Data da;
 
-    GUIAL(GUI gui, Data data){
+    GUIAL(GUI gui, Data data) {
         this.gui = gui;
         da = data;
     }
@@ -43,7 +43,7 @@ class GUIAL implements ActionListener {
         }
     }
 
-    boolean isValidFile(String s){
+    boolean isValidFile(String s) {
         boolean bol = s.matches("[\\w\\(\\)\\|]+\\.txt")&&TextFile.fileExists(s);
         if (!bol) log("ERROR: "+s+" is not a valid file");
         return bol;
