@@ -1,37 +1,34 @@
 package utils;
 
-import MyDM.Data;
+import MyDM.DataController;
+import twitter4j.Status;
 
 import java.io.*;
+import java.util.ArrayList;
 
 /**
  * Created by H on 01/11/14.
  */
-public class ReadObjects implements Runnable {
-    public Object o;
-    String readlocation;
 
-    public ReadObjects(String file){
+public class ReadObjects implements Runnable {
+    public ArrayList<Status> o;
+
+    public ReadObjects(String file) throws ClassNotFoundException {
         File f = new File(file);
         if(!f.exists()) try {
-            new SaveObjects(new Data("keywords.txt"),"var/Data.bin");
+            new SaveObjects(new DataController("keywords.txt"),"var/Data.bin");
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        readlocation = file;
-        System.out.println("Reading Object File: "+readlocation);
+        System.out.println("Reading Object File: "+file);
         try {
-            FileInputStream filestream = new FileInputStream(readlocation);
+            FileInputStream filestream = new FileInputStream(file);
             ObjectInput input = new ObjectInputStream(filestream);
-            o = input.readObject();
+            o = (ArrayList<Status>) input.readObject();
             input.close();
             filestream.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            System.out.println("Read object of type: "+o.getClass().toString());
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
     }

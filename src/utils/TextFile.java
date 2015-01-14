@@ -1,11 +1,15 @@
 package utils;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Scanner;
 
 //This class deals with TextFiles to be used by the program
 public class TextFile {
@@ -13,7 +17,6 @@ public class TextFile {
     private final String filename;
     public ArrayList<String> lines;
     private final static Charset ENCODING = StandardCharsets.UTF_8;
-    String commentchar = "#";
 
     //Loads the specified textfile. If the readlocation doesn't exist, it will
     //create it
@@ -28,10 +31,10 @@ public class TextFile {
 
     }
 
-   @Override
-   public String toString(){
-       return filename;
-   }
+    @Override
+    public String toString(){
+        return filename;
+    }
 
     /*
     * Reads each line from the text file and adds it to the lines ArrayList
@@ -43,11 +46,12 @@ public class TextFile {
         System.out.println("Reading File: "+filename);
         Path path = Paths.get(filename);
         lines = new ArrayList<>();
-        try (Scanner scanner =  new Scanner(path, ENCODING.name())){
-            while (scanner.hasNextLine()){
-                lines.add(scanner.nextLine());
-            }
+        Scanner scanner =  new Scanner(path, ENCODING.name());
+        while (scanner.hasNextLine()){
+            String s = scanner.nextLine();
+            lines.add(s);
         }
+
     }
 
 

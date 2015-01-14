@@ -2,8 +2,6 @@ package MyDM;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 
 /**
  * Created by Harry Coultas Blum on 19/11/14.
@@ -12,11 +10,11 @@ import java.awt.event.WindowEvent;
  */
 
 public class GUI extends JFrame {
-    JTextField keywords, datafilelocation;
+    static JTextField keywords, datafilelocation;
     JButton searchtwitter;
     JButton keywordsbut, savetotext;
     int blockwidth=400,blockheight=230;
-    Data data;
+    DataController data;
     JTextArea log;
     JRadioButton stop;
 
@@ -27,9 +25,9 @@ public class GUI extends JFrame {
         setLayout(new GridLayout(1,2));
         setTitle("Tweet Miner");
         JPanel filepanel = new JPanel(new GridLayout(2,2));
-        JPanel controlpanel = new JPanel(new GridLayout(2,1));
+        JPanel controlpanel = new JPanel(new GridLayout(3,1));
         keywordpanel = new JPanel(new GridLayout(2,1));
-
+        stop = new JRadioButton("Keep Running");
         setResizable(false);
 
         //Logging Area:
@@ -52,6 +50,7 @@ public class GUI extends JFrame {
         searchtwitter = new JButton("Search Twitter");
 
         controlpanel.add(filepanel);
+        controlpanel.add(stop);
         controlpanel.add(searchtwitter);
 
         //The Keywords Area:
@@ -68,11 +67,15 @@ public class GUI extends JFrame {
 
         add(controlpanel);
         add(logpane);
-        data = new Data("keywords.txt");
+
+        data = new DataController("keywords.txt");
+        //Adding the GUIAL Action Listener
         al = new GUIAL(this, data);
         keywordsbut.addActionListener(al);
         savetotext.addActionListener(al);
         searchtwitter.addActionListener(al);
+        stop.addActionListener(al);
+        data.load();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         refreshsize();
@@ -89,13 +92,6 @@ public class GUI extends JFrame {
         g.setVgap(5);
     }
 
-    //Sets the grid layout
-    //[NOT IMPLEMENTED]
-    void setGrid(int rows, int colums){
-        GridLayout g = (GridLayout) getContentPane().getLayout();
-        g.setRows(rows);
-        g.setColumns(colums);
-    }
 
     //Writes the given string on a new line in logging are on the right
     public static void log(String s){

@@ -2,47 +2,65 @@ package Twitterr;
 
 import MyDM.GUI;
 import twitter4j.*;
-import twitter4j.Query;
+
 import java.util.ArrayList;
 
 /**
- * Created by H on 28/10/14.
+ * Searches the twitter API:
+ *
+ * IMPORTANT: Change geoLocation location
  */
+
 public class Search implements Runnable {
     private static final Twitter twitter = new TwitterConnection().twitter;
-    private static GeoLocation geo = new GeoLocation(55.16807,-4.41317);
+    private static GeoLocation geoLocation = new GeoLocation(55.16807, -4.41317);
+    private static double radius = 523.26;
     public ArrayList<Status> results;
     public String s;
     private int num;
+    public int numtweets = 0;
 
     static {
         GUI.log("\n---------Searching---------\n");
     }
 
-    public Search(String s,int num){
-        this.s=s;
-        this.num=num;
+    public Search(String s, int num) {
+        this.s = s;
+        this.num = num;
         results = new ArrayList<>();
         GUI.log(s);
     }
 
     @Override
     public void run() {
-        int numtweets = 0;
         long lowestTweetId = Long.MAX_VALUE;
-        while (numtweets<num) {
+        while (numtweets < num) {
             Query query = new Query(s);
             query.setCount(100);
-            query.setGeoCode(geo, 523.26, Query.KILOMETERS);
-            QueryResult queryResult;
+            query.setGeoCode(geoLocation, radius, Query.KILOMETERS);
+            QueryResult queryResult = null;
             try {
+                System.out.println("Querying API (" + s + ")");
                 queryResult = twitter.search(query);
 
+                //If something goes wrong:
             } catch (TwitterException e) {
-                break;
+                e.printStackTrace();
+                GUI.log(e.getErrorMessage());
+                //If the rate limit is exceeded:
+                if (e.exceededRateLimitation()) {
+                    GUI.log("Exceeded Rate Limit");
+                    int wait = e.getRateLimitStatus().getSecondsUntilReset();
+                    GUI.log("Waiting " + wait + "secs");
+                    try {
+                        Thread.sleep(wait * 1000);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
+                } else {
+                    return;
+                }
             }
-
-            numtweets += queryResult.getTweets().size();
             for (Status status : queryResult.getTweets()) {
                 results.add(status);
                 if (status.getId() < lowestTweetId) {
@@ -50,7 +68,6 @@ public class Search implements Runnable {
                     query.setMaxId(lowestTweetId);
                 }
             }
-
         }
     }
 }

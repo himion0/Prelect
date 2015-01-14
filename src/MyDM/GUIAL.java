@@ -10,11 +10,13 @@ import java.awt.event.ActionListener;
  */
 
 //This class deals with the button presses of the previous
-class GUIAL implements ActionListener {
+public class GUIAL implements ActionListener {
+    //Whether to keep searching through the API:
     GUI gui;
-    Data da;
+    DataController da;
 
-    GUIAL(GUI gui, Data data) {
+
+    GUIAL(GUI gui, DataController data) {
         this.gui = gui;
         da = data;
     }
@@ -22,8 +24,15 @@ class GUIAL implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == gui.searchtwitter) {
+            String text = gui.searchtwitter.getText();
             try {
-                da.search();
+                if (text.equals("Search Twitter")){
+                    da.search();
+                    gui.searchtwitter.setText("Stop");
+                } else {
+                    gui.searchtwitter.setText("Search Twitter");
+                }
+
             } catch (InterruptedException e1) {
                 e1.printStackTrace();
             }
@@ -31,12 +40,12 @@ class GUIAL implements ActionListener {
             log("\n------Loading keywords-----");
             log("[THIS IS NOT IMPLEMENTED]");
         } else if (e.getSource() == gui.savetotext){
-            if (!da.data.isEmpty()){
-                if (isValidFile(gui.keywords.getText())&&isValidFile(gui.datafilelocation.getText())){
+            if (!DataController.data.isEmpty()){
+                if (isValidFile(GUI.keywords.getText())&&isValidFile(GUI.datafilelocation.getText())){
 
                     log("\n------Saving to Textfile-----");
-                    da.keywordfile=gui.keywords.getText();
-                    da.savetoText(gui.datafilelocation.getText());
+                    da.keywordfile=GUI.keywords.getText();
+                    da.savetoText(GUI.datafilelocation.getText());
                     log("------Finished Saving-----");
                 }
             }
