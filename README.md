@@ -11,7 +11,7 @@ Implemented in Java, purpose of the application is to allow a user to scan twitt
 
 How to use:
 =======
-Load Keywords
+**Load Keywords**
 
 •	Will load the keywords from the specified file. Please not that the file must have a .txt extension. 
 •	Keywords must be of @... or #... format. 
@@ -20,23 +20,23 @@ Load Keywords
 			@Twitter
 			#Happy
 
-Save to Text File
+**Save to Text File**
 
 •	The application will save the tweets it has found into the text file location specified. It will be in a format that is easily imported into R.
 •	Note that each time the application is loaded; it will load the previously saved tweets. 
 •	Delete previous tweets button?
 
 
-Keep Running
+**Keep Running**
 
 •	Will keep the application constantly running after hitting ‘Search Twitter’. When the Rate Limit is hit it will pause and add the tweets that it has found so far to the data.
 •	To stop hit the ‘Stop’ button (The search twitter button will change once it has been press)
 
-Search Twitter / Stop
+**Search Twitter / Stop**
 
 •	Search twitter using the keywords file loaded and will display information about what tweets were found in the Console Display on the right
 
-Console Display
+**Console Display**
 
 •	Shows information about what the program is doing:
 o	Tweets found along with the keywords searched for
