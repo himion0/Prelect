@@ -126,7 +126,7 @@ public class DataController implements Runnable {
         ArrayList<ArrayList> ar = new ArrayList<>(data.size());
         for (Status t : data) ar.add(statustoArray(t));
         try {
-            rtext.saveChanges(columns, ar);
+            rtext.saveChanges(coYealumns, ar);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -161,6 +161,7 @@ public class DataController implements Runnable {
             @Override
             public void run() {
                 try {
+                    while (!dc.getExec().isTerminated()){}
                     dc.save();
                     dc.savetoText("tweets.txt");
                 } catch (IOException e) {
