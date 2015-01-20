@@ -15,7 +15,6 @@ public class GUIAL implements ActionListener {
     GUI gui;
     DataController da;
 
-
     GUIAL(GUI gui, DataController data) {
         this.gui = gui;
         da = data;
@@ -25,12 +24,12 @@ public class GUIAL implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == gui.searchtwitter) {
             String text = gui.searchtwitter.getText();
-
             if (text.equals("Search Twitter")){
                 new Thread(da).start();
                 gui.searchtwitter.setText("Stop");
             } else {
                 gui.searchtwitter.setText("Search Twitter");
+                da.getExec().shutdownNow();
             }
         } else if (e.getSource() == gui.keywordsbut) {
             log("\n------Loading keywords-----");
@@ -39,7 +38,7 @@ public class GUIAL implements ActionListener {
             if (!DataController.data.isEmpty()){
                 if (isValidFile(GUI.keywords.getText())&&isValidFile(GUI.datafilelocation.getText())){
 
-                    log("\n------Saving to Textfile-----");
+                    log("Saving "+da.data.size()+" Tweets");
                     da.keywordfile=GUI.keywords.getText();
                     da.savetoText(GUI.datafilelocation.getText());
                     log("------Finished Saving-----");
@@ -55,7 +54,6 @@ public class GUIAL implements ActionListener {
     }
 
     public void log(String s){
-        gui.log.setText(gui.log.getText()+s+"\n");
-        gui.repaint();
+        gui.log(s);
     }
 }

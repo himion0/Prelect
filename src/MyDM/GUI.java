@@ -16,14 +16,18 @@ public class GUI extends JFrame {
     JButton keywordsbut, savetotext;
     int blockwidth=400,blockheight=230;
     DataController data;
-    JTextArea log;
+    static JTextArea log;
     JRadioButton stop;
 
     static GUIAL al;
     JPanel keywordpanel;
 
+    public static boolean ISGUI = false;
+
     public GUI() {
-        setLayout(new GridLayout(1,2));
+        ISGUI = true;
+        //Main layout:
+        setLayout(new GridLayout(1, 2));
         setTitle("Prelect");
         JPanel filepanel = new JPanel(new GridLayout(2,2));
         JPanel controlpanel = new JPanel(new GridLayout(3,1));
@@ -97,11 +101,21 @@ public class GUI extends JFrame {
 
     //Writes the given string on a new line in logging are on the right
     public static void log(String s){
-        al.log(s);
+        log.setText(log.getText() + s + "\n");
+        log.repaint();
     }
 
+    private static void setShutdown(){
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                DataController.getExec().shutdownNow();
+            }
+        }));
+    }
     //Runs the GUI:
     public static void main(String[] args) {
+        setShutdown();
         new GUI();
     }
 }

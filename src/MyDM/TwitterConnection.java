@@ -1,4 +1,4 @@
-package Twitterr;
+package MyDM;
 
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;

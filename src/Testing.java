@@ -1,4 +1,4 @@
-import Twitterr.TwitterConnection;
+import MyDM.TwitterConnection;
 import twitter4j.*;
 
 import java.io.IOException;
