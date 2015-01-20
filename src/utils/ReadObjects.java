@@ -27,7 +27,7 @@ public class ReadObjects implements Runnable {
             o = (ArrayList<Status>) input.readObject();
             input.close();
             filestream.close();
-            System.out.println("Read object of type: "+o.getClass().toString());
+            System.out.println("Found Object of type: "+o.getClass().toString());
         } catch (IOException e) {
             e.printStackTrace();
         }

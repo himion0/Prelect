@@ -9,8 +9,11 @@ import utils.TextFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
-public class DataController {
+public class DataController implements Runnable {
     public static ArrayList<String> searchstrings;
     private static ArrayList<Search> searches;
     public static ArrayList<Status> data;
@@ -30,60 +33,49 @@ public class DataController {
         searches = new ArrayList<>();
     }
 
-    void search() throws InterruptedException {
+    //Thread managing object
+    static ExecutorService searchExec = Executors.newFixedThreadPool(searchstrings.size());
+
+    public void run() {
+
         timetaken = System.currentTimeMillis();
-        Thread[] threads = new Thread[searchstrings.size()];
-        int i = 0;
+        LinkedBlockingQueue<Status> resultsQueue = new LinkedBlockingQueue<>();
+
         for (String s : searchstrings) {
-            Search ser = new Search(s,100);
-            threads[i] = new Thread(ser);
-            threads[i].start();
-            i++;
+            Search ser = new Search(s, resultsQueue);
             searches.add(ser);
+            searchExec.execute(ser);
         }
 
-        for (Thread t : threads) t.join();
-        importSearch();
+        //Stop any new threads from being executed
+        searchExec.shutdown();
 
-        timetaken -= System.currentTimeMillis();
-        GUI.log("Total time: " + -1*timetaken + "ms");
-        GUI.log("Tweets in database: " + data.size());
+        boolean foundsomething = false;
+        while(!searchExec.isTerminated()) {
+            if(resultsQueue.peek() == null) {
+                continue;
+            }
 
-        try {
-            save();
+            ArrayList<Status> tmpResults = new ArrayList<>();
+            resultsQueue.drainTo(tmpResults);
+
+            for(Status result : tmpResults) {
+                if(!data.contains(result)) {
+                    data.add(result);
+                    foundsomething = true;
+                    GUI.log("New Tweet Found");
+                }
+            }
+        }
+        if (foundsomething) try { save();
         } catch (IOException e) {
             e.printStackTrace();
         }
+        GUI.searchtwitter.setText("Search Twitter");
+        GUI.log("\n-------Finished Search---------");
     }
 
-    void importSearch() {
-        boolean found;
-        GUI.log("\n-------Importing Search-------\n");
-        int newtweets = 0;
-        for (Search s : searches) {
-            found = false;
-            GUI.log("Found " + s.numtweets + " results for: " + s.s);
-            for (Status status : s.results) {
-                //Find duplicates (Could be made more efficient)
-                if (data!=null) {
-                    for (Status stat : data) {
-                        if (stat.getId() == status.getId()) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        data.add(status);
-                        newtweets++;
-                    }
-                }
-
-            }
-        }
-        GUI.log("\nTweets Added:" + newtweets + "\n");
-    }
-
-    ArrayList<String> statustoArray(Status s){
+    ArrayList<String> statustoArray(Status s) {
         ArrayList<String> ar = new ArrayList<>();
         ar.add(s.getText());
         ar.add(s.getUser().getScreenName());
@@ -125,9 +117,5 @@ public class DataController {
 
     public void save() throws IOException {
         new Thread(new SaveObjects(data,"var/Data.bin")).run();
-    }
-
-    String reverseString(String s){
-        return new StringBuffer(s).reverse().toString();
     }
 }

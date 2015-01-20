@@ -1,6 +1,7 @@
 package MyDM;
 
 import javax.swing.*;
+import javax.swing.text.DefaultCaret;
 import java.awt.*;
 
 /**
@@ -11,7 +12,7 @@ import java.awt.*;
 
 public class GUI extends JFrame {
     static JTextField keywords, datafilelocation;
-    JButton searchtwitter;
+    static JButton searchtwitter;
     JButton keywordsbut, savetotext;
     int blockwidth=400,blockheight=230;
     DataController data;
@@ -23,7 +24,7 @@ public class GUI extends JFrame {
 
     public GUI() {
         setLayout(new GridLayout(1,2));
-        setTitle("Tweet Miner");
+        setTitle("Prelect");
         JPanel filepanel = new JPanel(new GridLayout(2,2));
         JPanel controlpanel = new JPanel(new GridLayout(3,1));
         keywordpanel = new JPanel(new GridLayout(2,1));
@@ -34,6 +35,8 @@ public class GUI extends JFrame {
         log = new JTextArea();
         log.setLineWrap(true);
         log.setEditable(false);
+        ((DefaultCaret)log.getCaret()).setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+
         JScrollPane logpane = new JScrollPane(log);
 
         //Control Panel:
@@ -91,7 +94,6 @@ public class GUI extends JFrame {
         g.setHgap(5);
         g.setVgap(5);
     }
-
 
     //Writes the given string on a new line in logging are on the right
     public static void log(String s){

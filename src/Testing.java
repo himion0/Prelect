@@ -1,4 +1,6 @@
-import java.io.File;
+import Twitterr.TwitterConnection;
+import twitter4j.*;
+
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -8,47 +10,41 @@ import java.util.ArrayList;
 public class Testing {
     private static ArrayList columns;
 
+    Testing(){
+        final Twitter twitter = new TwitterConnection().getTwitter();
+        final GeoLocation geoLocation = new GeoLocation(55.16807, -4.41317);
+        int found = 0;
+        final double radius = 523.26;
+        ArrayList<Status> results = new ArrayList<>();
+        int num = 200;
+        int querycount = 100;
+        final String QUERY = "#Labour";
 
-    public static void main(String[] args) throws IOException {
-        File file = new File("testslkfjalsdkfj");
-
-    }
-
-    static String reverseString(String s){
-        return new StringBuffer(s).reverse().toString();
-    }
-
-    static private ArrayList<String> stringtoArray(String s){
-        //Check to see if it is a valid:
-
-        //Parsestring:
-        s =  reverseString(s);
-
-        //Check if columns array already exists:
-        if (columns!=null) {
-            ArrayList<String> sarray = new ArrayList<>(columns.size());
-            String element = "";
-            int numofele = 0;
-            for (Character c : s.toCharArray()){
-                if (c=='|'&&numofele<columns.size()-1){
-                    sarray.add(0,reverseString(element));
-                    element = "";
-                    numofele++;
-                } else {
-                    element += c;
+        long lowestTweetId = Long.MAX_VALUE;
+        Query query = new Query(QUERY);
+        query.setCount(querycount);
+        query.setGeoCode(geoLocation, radius, Query.KILOMETERS);
+        query.setSince("2014-07-01");
+        QueryResult queryResult;
+        try {
+            System.out.println("Querying API (" + QUERY+ ")");
+            queryResult = twitter.search(query);
+            for (Status status : queryResult.getTweets()) {
+                results.add(status);
+                found++;
+                if (status.getId() < lowestTweetId) {
+                    lowestTweetId = status.getId();
+                    query.setMaxId(lowestTweetId);
                 }
             }
-            sarray.add(0,reverseString(element));
-            return sarray;
+            //If something goes wrong:
+        } catch (TwitterException e) {
+            e.printStackTrace();
         }
-        //Parse Column
-        else {
-            ArrayList<String> sarray = new ArrayList<>();
-            for (String s1 : s.split("\\|")) {
-                sarray.add(0, reverseString(s1));
-            }
-            return sarray;
-        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        new Testing();
     }
 }
 

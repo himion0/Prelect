@@ -25,16 +25,12 @@ public class GUIAL implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == gui.searchtwitter) {
             String text = gui.searchtwitter.getText();
-            try {
-                if (text.equals("Search Twitter")){
-                    da.search();
-                    gui.searchtwitter.setText("Stop");
-                } else {
-                    gui.searchtwitter.setText("Search Twitter");
-                }
 
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
+            if (text.equals("Search Twitter")){
+                new Thread(da).start();
+                gui.searchtwitter.setText("Stop");
+            } else {
+                gui.searchtwitter.setText("Search Twitter");
             }
         } else if (e.getSource() == gui.keywordsbut) {
             log("\n------Loading keywords-----");
@@ -60,5 +56,6 @@ public class GUIAL implements ActionListener {
 
     public void log(String s){
         gui.log.setText(gui.log.getText()+s+"\n");
+        gui.repaint();
     }
 }

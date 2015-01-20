@@ -1,6 +1,7 @@
 package Twitterr;
 
-import twitter4j.*;
+import twitter4j.Twitter;
+import twitter4j.TwitterFactory;
 import twitter4j.auth.AccessToken;
 
 
@@ -27,5 +28,8 @@ public class TwitterConnection {
         System.out.println("Success");
     }
 
+    public Twitter getTwitter(){
+        return twitter;
+    }
 
 }
