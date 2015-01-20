@@ -171,8 +171,13 @@ public class DataController implements Runnable {
             dc.run();
             if (!searching) {
                 int wait = Search.exception.getRateLimitStatus().getSecondsUntilReset();
-                System.out.println("Exceeded Rate Limit: "+wait+"secs");
-                Thread.sleep(wait*1000);
+                while (wait>0){
+                    wait = Search.exception.getRateLimitStatus().getSecondsUntilReset();
+                    System.out.println("Exceeded Rate Limit! Waiting: "+wait+"secs");
+                    if (wait<30) Thread.sleep(1000);
+                    else Thread.sleep(30000);
+                }
+
             }
         }
     }
