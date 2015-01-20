@@ -157,12 +157,15 @@ public class DataController implements Runnable {
         System.setProperty("java.awt.headless", "true");
         final DataController dc = new DataController(args[0]);
         dc.load();
+
+        //Anonymous shutdown hook for the program
+        //Runs at the end of the program to save progress to a text file
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     while (!dc.getExec().isTerminated()){}
-                    log(String.valueOf(dc.data.size()));
+                    log("Datasize: "+dc.data.size());
                     dc.save();
                     dc.savetoText("tweets.txt");
                 } catch (IOException e) {
@@ -178,8 +181,9 @@ public class DataController implements Runnable {
                 while (wait>0){
                     wait = Search.exception.getRateLimitStatus().getSecondsUntilReset();
                     System.out.println("Exceeded Rate Limit! Waiting: "+wait+"secs");
-                    if (wait<30) Thread.sleep(1000);
-                    else Thread.sleep(30000);
+                    //Wait a minute or a second depending on current limit:
+                    if (wait<=60) Thread.sleep(1000);
+                    else Thread.sleep(60000);
                 }
 
             }
