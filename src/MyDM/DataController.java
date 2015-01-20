@@ -154,12 +154,16 @@ public class DataController implements Runnable {
 
     public static void main(String[] args) throws InterruptedException {
         System.setProperty("java.awt.headless", "true");
-        DataController dc = new DataController(args[0]);
+        final DataController dc = new DataController(args[0]);
         dc.load();
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
-                DataController.getExec().shutdownNow();
+                try {
+                    dc.save();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }));
 
@@ -171,7 +175,5 @@ public class DataController implements Runnable {
                 Thread.sleep(wait*1000);
             }
         }
-
-
     }
 }
