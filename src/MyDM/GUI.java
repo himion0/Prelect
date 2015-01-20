@@ -47,7 +47,7 @@ public class GUI extends JFrame {
         keywords = new JTextField("keywords.txt");
         keywords.requestFocusInWindow();
         keywordsbut = new JButton("Load Keywords");
-        datafilelocation = new JTextField("UKDMdata.txt");
+        datafilelocation = new JTextField("tweets.txt");
         savetotext = new JButton("Save to Text File");
 
         filepanel.add(keywords);
@@ -109,6 +109,7 @@ public class GUI extends JFrame {
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
+
                 DataController.getExec().shutdownNow();
             }
         }));

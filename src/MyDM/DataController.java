@@ -130,6 +130,7 @@ public class DataController implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        log("Saved to Text File: "+s);
     }
 
     public void load() {
