@@ -162,6 +162,7 @@ public class DataController implements Runnable {
             public void run() {
                 try {
                     while (!dc.getExec().isTerminated()){}
+                    log(String.valueOf(dc.data.size()));
                     dc.save();
                     dc.savetoText("tweets.txt");
                 } catch (IOException e) {
