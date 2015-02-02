@@ -3,13 +3,9 @@ Tweet-Miner
 
 An application to anaylse tweets 
 
-Implemented in Java, purpose of the application is to allow a user to scan twitter for tweets related to the keywords in specified text file (Default: keywords.txt) and put them into a format easily accessible by other applications like R. 
+Implemented in Java, purpose of the application is to allow a user to scan twitter for tweets related to the keywords in specified text file (Default: keywords.txt) and put them into a format easily accessible by other applications like R.
 
-=======
-
-Implemented in Java, purpose of the application is to allow a user to scan twitter for tweets related to the keywords in specified text file (Default: keywords.txt) and put them into a format easily accessible by other applications like R. 
-
-How to use:
+[GUI] How to use:
 =======
 **Load Keywords**
 
@@ -43,6 +39,16 @@ o	Tweets found along with the keywords searched for
 o	Rate Limit Reached warnings
 o	How many tweets currently are in the data set. 
 o	Errors
+
+
+[API] How to use:
+======
+
+**Combine Data**
+This allows you to combine data in a certain folder. It will find all the files in the directory specified in the first argument of the constructor  (e.g. "C://Users/${USER}/Directory") with a general file named with the specified second argument "Data" (e.g. .bin, Data 2.bin...)
+
+**DataController** 
+This class has a main method to allow running the entire prorgam from the terminal the user to deploy the application for tweet collection from a server. [TO BE IMPLEMENTED] GUI setup of downloading tweets locally from server or starting a server from a client.
 
 Conclusion
 ======
