@@ -126,7 +126,7 @@ public class DataController implements Runnable {
         ArrayList<ArrayList> ar = new ArrayList<>(data.size());
         for (Status t : data) ar.add(statustoArray(t));
         try {
-            rtext.saveChanges(coYealumns, ar);
+            rtext.saveChanges(columns, ar);
         } catch (IOException e) {
             e.printStackTrace();
         }
