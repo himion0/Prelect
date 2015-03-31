@@ -24,7 +24,6 @@ public final class SaveObjects implements Runnable {
             e.printStackTrace();
         }
 
-
         FileOutputStream fs = null;
         try {
             fs = new FileOutputStream(savelocation);
@@ -40,7 +39,6 @@ public final class SaveObjects implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 }
 

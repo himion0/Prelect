@@ -75,14 +75,13 @@ public class GUI extends JFrame {
         add(controlpanel);
         add(logpane);
 
-        data = new DataController("keywords.txt");
+        data = new DataController();
         //Adding the GUIAL Action Listener
         al = new GUIAL(this, data);
         keywordsbut.addActionListener(al);
         savetotext.addActionListener(al);
         searchtwitter.addActionListener(al);
         stop.addActionListener(al);
-        data.load();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         refreshsize();
@@ -105,18 +104,8 @@ public class GUI extends JFrame {
         log.repaint();
     }
 
-    private static void setShutdown(){
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-
-                DataController.getExec().shutdownNow();
-            }
-        }));
-    }
     //Runs the GUI:
     public static void main(String[] args) {
-        setShutdown();
         new GUI();
     }
 }

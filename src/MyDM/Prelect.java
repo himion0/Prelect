@@ -1,5 +1,7 @@
 package MyDM;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -65,10 +67,17 @@ public class Prelect {
 
         System.out.println(voters.size());
         double size = voters.size();
-        System.out.println("Conservatives: " + ("" + 100 * conservatives / size).substring(0, 5)+"%");
-        System.out.println("Labour: " + ("" + 100 * labour / size).substring(0, 5)+"%");
-        System.out.println("Green: " + ("" + 100 * green / size).substring(0, 5)+"%");
-        System.out.println("Lib-Dem: " + ("" + 100 * libdem / size).substring(0, 5) + "%");
-        System.out.println("UKIP: " + ("" + 100 * ukip / size).substring(0, 5)+"%");
+        System.out.println("Conservatives: " + round(100 * conservatives / size,4) + "%");
+        System.out.println("Labour: " + round(100 * labour / size,4) + "%");
+        System.out.println("Green: " + round(100 * green / size,4) + "%");
+        System.out.println("Lib-Dem: " + round(100 * libdem / size,4) + "%");
+        System.out.println("UKIP: " + round(100 * ukip / size,4) + "%");
+    }
+
+    public static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+        BigDecimal bd = new BigDecimal(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
     }
 }

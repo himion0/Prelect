@@ -2,6 +2,7 @@ package MyDM;
 
 import utils.ReadObjects;
 import utils.SaveObjects;
+import utils.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,8 +22,10 @@ public class DataRefactor {
     public ArrayList<Tweet> tweets;
     public HashMap<Long, Voter> voters;
 
-    public static void main(String[] args) throws IOException, ClassNotFoundException {
-        DataRefactor dataRefactor= new DataRefactor("var/tweets.bin","var/voters.bin");
+    public static void main(String[] args) {
+        DataRefactor dataRefactor = new DataRefactor("var/tweets.bin","var/voters.bin");
+        dataRefactor.resetVoterScans();
+        dataRefactor.save();
     }
 
     public DataRefactor(String tweetlocation, String voterlocation) {
@@ -32,24 +35,8 @@ public class DataRefactor {
         voters = readVoters(voterlocation);
     }
 
-    HashMap<Long, Voter> readVoters(String location){
-        ReadObjects ro = null;
-        try {
-            ro = new ReadObjects(location);
-            ro.run();
-
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        HashMap<Long, Voter> voters = (HashMap<Long, Voter>) ro.o;
-
-        System.out.println("voters: " + voters.size());
-        return voters;
-    }
-
     ArrayList<Tweet> readTweets(String location) {
         ReadObjects ro = null;
-
         try {
             ro = new ReadObjects(location);
             ro.run();
@@ -58,14 +45,123 @@ public class DataRefactor {
         }
         ArrayList<Tweet> ret = (ArrayList<Tweet>) ro.o;
         if (ret!=null) {
-            System.out.println("tweets: "+ ret.size());
+            StringUtils.log("Tweets: "+ ret.size(),"blue");
             return ret;
         }
         System.out.println(location+" has no tweets");
         return null;
     }
 
-//    public void combineData(String folder, String genernalname){
+    HashMap<Long, Voter> readVoters(String location){
+        ReadObjects ro = null;
+        try {
+            ro = new ReadObjects(location);
+            ro.run();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        HashMap<Long, Voter> voters = (HashMap<Long, Voter>) ro.o;
+        if (voters==null){
+            System.out.println("Voters was Empty: ");
+            voters = new HashMap<>();
+        }
+        StringUtils.log("Voters: " + voters.size(), "blue");
+        return voters;
+    }
+
+    HashMap<Long,Voter> createVoters(){
+        if (tweets == null) throw new IllegalArgumentException("Cannot create voters from null tweet array");
+        HashMap<Long,Voter> voters = new HashMap<>();
+        for (Tweet t : tweets){
+            Long userid = t.getUser().getId();
+            if (!voters.containsKey(userid)) voters.put(userid,new Voter(t.getUser(),t));
+            else {
+                voters.get(userid).tweets.add(t);
+            }
+        }
+
+        Iterator it = voters.entrySet().iterator();
+        while (it.hasNext()){
+            Map.Entry<Long,Voter> entry = (Map.Entry<Long, Voter>) it.next();
+            entry.getValue().update();
+        }
+
+        return voters;
+    }
+
+    ArrayList<Tweet> createTweets(){
+
+        if (voters.isEmpty()||voters==null) return null;
+
+        ArrayList<Tweet> tweets = new ArrayList<>();
+        Iterator it = voters.entrySet().iterator();
+
+        while (it.hasNext()){
+            Map.Entry<Long,Voter> entry = (Map.Entry<Long, Voter>) it.next();
+            for (Tweet t : entry.getValue().tweets) {
+                boolean found = false;
+                for (Tweet newtweet : tweets) {
+                    if (t.getID() == newtweet.getID()) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) tweets.add(t);
+            }
+        }
+
+        if (tweets.isEmpty()||tweets==null)return null;
+        else return tweets;
+    }
+
+    public void save(){
+        save(tweets, tweetlocation);
+        save(voters, voterlocation);
+    }
+
+    public void save(ArrayList<Tweet> tweets,String location){
+        try {
+            new SaveObjects(tweets,location).run();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void save(HashMap<Long,Voter> voters,String location){
+        try {
+            new SaveObjects(voters,location).run();
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void resetVoterScans() {
+        Iterator<Map.Entry<Long,Voter>> it = voters.entrySet().iterator();
+        while (it.hasNext()){
+            Voter v = it.next().getValue();
+            v.scannedall = false;
+            v.numOfScans = 0;
+        }
+    }
+
+    public void resetVoterScans(String s) {
+        Iterator<Map.Entry<Long, Voter>> it = voters.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Voter v = it.next().getValue();
+            if (v.name.trim().equals(s)) v.scannedall = false;
+        }
+    }
+
+    public void updateAllVoterSentiments(){
+        int i = 0;
+        for (Long l : voters.keySet()){
+            voters.get(l).update();
+        }
+        System.out.println(i);
+    }
+
+    //    public void combineData(String folder, String genernalname){
 //        int i = 1;
 //        String c;
 //        boolean hasnext = true;
@@ -116,89 +212,4 @@ public class DataRefactor {
 //        }
 //        exec.shutdownNow();
 //    }
-
-    HashMap<Long,Voter> createVoters(ArrayList<Tweet> tweets){
-        if (tweets == null) throw new IllegalArgumentException("Cannot create voters from null tweet array");
-        HashMap<Long,Voter> voters = new HashMap<>();
-        for (Tweet t : tweets){
-            Long userid = t.getUser().getId();
-            if (!voters.containsKey(userid)) voters.put(t.getUser().getId(),new Voter(t.getUser(),t));
-            else {
-                voters.get(t.getUser().getId()).addTweet(t);
-            }
-        }
-
-        Iterator it = voters.entrySet().iterator();
-        System.out.println(voters.size());
-        while (it.hasNext()){
-            Map.Entry<Long,Voter> entry = (Map.Entry<Long, Voter>) it.next();
-            entry.getValue().update();
-        }
-
-        return voters;
-    }
-
-    ArrayList<Tweet> votersTweets(){
-
-        if (voters.isEmpty()||voters==null) return null;
-
-        ArrayList<Tweet> tweets = new ArrayList<>();
-        Iterator it = voters.entrySet().iterator();
-
-        while (it.hasNext()){
-            Map.Entry<Long,Voter> entry = (Map.Entry<Long, Voter>) it.next();
-            for (Tweet t : entry.getValue().tweets) {
-                boolean found = false;
-                for (Tweet newtweet : tweets) {
-                    if (t.getID() == newtweet.getID()) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) tweets.add(t);
-            }
-        }
-
-        if (tweets.isEmpty()||tweets==null)return null;
-        else return tweets;
-    }
-
-    public void save(){
-        save(tweets, tweetlocation);
-        save(voters, voterlocation);
-    }
-
-    public void save(ArrayList<Tweet> tweets,String location){
-        try {
-            new SaveObjects(tweets,location).run();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void save(HashMap<Long,Voter> voters,String location){
-        try {
-            new SaveObjects(voters,location).run();
-        } catch (IOException e){
-            e.printStackTrace();
-        }
-    }
-
-    public void resetVoterScans() {
-        Iterator it = voters.entrySet().iterator();
-        System.out.println(voters.size());
-        while (it.hasNext()){
-            Map.Entry<Long,Voter> entry = (Map.Entry<Long, Voter>) it.next();
-            entry.getValue().scannedall = false;
-        }
-        save(voters,"var/voters.bin");
-    }
-
-    public void updateAllVoterSentiments(){
-        int i = 0;
-        for (Long l : voters.keySet()){
-            voters.get(l).update();
-        }
-        System.out.println(i);
-    }
 }

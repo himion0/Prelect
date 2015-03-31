@@ -5,11 +5,7 @@ import utils.TextFile;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-/**
- * Created by Harry Coultas Blum on 19/11/14.
- */
-
-//This class deals with the button presses of the previous
+//This class deals with the button presses of GUI classs
 public class GUIAL implements ActionListener {
     //Whether to keep searching through the API:
     GUI gui;
@@ -25,7 +21,7 @@ public class GUIAL implements ActionListener {
         if (e.getSource() == gui.searchtwitter) {
             String text = gui.searchtwitter.getText();
             if (text.equals("Search Twitter")){
-                new Thread(da).start();
+//                new Thread(da).start(); CHECK
                 gui.searchtwitter.setText("Stop");
             } else {
                 gui.searchtwitter.setText("Search Twitter");
@@ -35,12 +31,10 @@ public class GUIAL implements ActionListener {
             log("\n------Loading keywords-----");
             log("[THIS IS NOT IMPLEMENTED]");
         } else if (e.getSource() == gui.savetotext){
-            if (!DataController.data.isEmpty()){
+            if (!DataController.tweets.isEmpty()){
                 if (isValidFile(GUI.keywords.getText())&&isValidFile(GUI.datafilelocation.getText())){
-
-                    log("Saving "+da.data.size()+" Tweets");
+                    log("Saving "+da.tweets.size()+" Tweets");
                     da.keywordfile=GUI.keywords.getText();
-                    da.savetoText(GUI.datafilelocation.getText());
                     log("------Finished Saving-----");
                 }
             }
@@ -48,7 +42,7 @@ public class GUIAL implements ActionListener {
     }
 
     boolean isValidFile(String s) {
-        boolean bol = s.matches("[\\w\\(\\)\\|]+\\.txt")&&TextFile.fileExists(s);
+        boolean bol = s.matches("[\\w\\(\\)\\|]+\\.txt")&& TextFile.fileExists(s);
         if (!bol) log("ERROR: "+s+" is not a valid file");
         return bol;
     }

@@ -1,4 +1,4 @@
-Tweet-Miner
+Tweet-MyDM
 =======
 
 An application to anaylse tweets 
