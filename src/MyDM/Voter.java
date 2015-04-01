@@ -20,7 +20,7 @@ public class Voter implements Serializable{
     //Conservative, Labour, Green, Liberal Democrat, UKIP
     //A party sentiment means that there aren't any tweets based on the voter that tells us about there sentiment towards that
     //party.
-    double[] partysetiment = {0,0,0,0,0};
+    double[] partysentiment = {0,0,0,0,0};
     boolean scannedall = false;
     static boolean ratelimited = false;
     int numOfScans = 0;
@@ -77,7 +77,7 @@ public class Voter implements Serializable{
         int[] count = {0, 0, 0, 0, 0};
         HashMap<String, Integer> modelocation = new HashMap<>();
 
-        partysetiment = new double[]{0, 0, 0, 0, 0};
+        partysentiment = new double[]{0, 0, 0, 0, 0};
 
         for (Tweet t : tweets){
 
@@ -90,28 +90,89 @@ public class Voter implements Serializable{
             }
 
             //Check sentiment:
+            double sentiment = 0;
             if (t.contains("Conservatives")||t.contains("Cameron")){
                 count[0]++;
-                partysetiment[0] += t.getSentiment();
+                sentiment = t.getSentiment()+1;
+                if (sentiment==5) {
+                    partysentiment[0] += 5.6;
+                } else if (sentiment==1) {
+                    partysentiment[0] += 0.4;
+                } else if (sentiment==2){
+                    partysentiment[0] += 1.8;
+                } else if (sentiment==4){
+                    partysentiment[0] += 3.2;
+                } else {
+                    partysentiment[0] += sentiment;
+                }
             }else if (t.contains("Labour")||t.contains("Miliband")){
                 count[1]++;
-                partysetiment[1] += t.getSentiment();
+                sentiment = t.getSentiment()+1;
+                if (sentiment==5) {
+                    partysentiment[1] += 5.6;
+                } else if (sentiment==1) {
+                    partysentiment[1] += 0.4;
+                } else if (sentiment==2){
+                    partysentiment[1] += 1.8;
+                } else if (sentiment==4){
+                    partysentiment[1] += 3.2;
+                } else {
+                    partysentiment[1] += sentiment;
+                }
             }else if (t.contains("GreenParty")||t.contains("natalie")||t.contains("Natalie")){
                 count[2]++;
-                partysetiment[2] += t.getSentiment();
+                sentiment = t.getSentiment()+1;
+                if (sentiment==5) {
+                    partysentiment[2] += 5.6;
+                } else if (sentiment==1) {
+                    partysentiment[2] += 0.4;
+                } else if (sentiment==2){
+                    partysentiment[2] += 1.8;
+                } else if (sentiment==4){
+                    partysentiment[2] += 3.2;
+                } else {
+                    partysentiment[2] += sentiment;
+                }
             }else if (t.contains("LibDems")||t.contains("nick_clegg")){
                 count[3]++;
-                partysetiment[3] += t.getSentiment();
+                sentiment = t.getSentiment()+1;
+                if (sentiment==5) {
+                    partysentiment[3] += 5.6;
+                } else if (sentiment==1) {
+                    partysentiment[3] += 0.4;
+                } else if (sentiment==2){
+                    partysentiment[3] += 1.8;
+                } else if (sentiment==4){
+                    partysentiment[3] += 3.2;
+                } else {
+                    partysentiment[3] += sentiment;
+                }
             }else if (t.contains("Farage")||t.contains("UKIP")){
                 count[4]++;
-                partysetiment[4] += t.getSentiment();
+                sentiment = t.getSentiment()+1;
+                if (sentiment==5) {
+                    partysentiment[4] += 5.6;
+                } else if (sentiment==1) {
+                    partysentiment[4] += 0.4;
+                } else if (sentiment==2){
+                    partysentiment[4] += 1.8;
+                } else if (sentiment==4){
+                    partysentiment[4] += 3.2;
+                } else {
+                    partysentiment[4] += sentiment;
+                }
             }
         }
 
         //Calculate sentiment average
         for (int i = 0; i <count.length;i++) {
-            if (count[i]==0)partysetiment[i] = -1;
-            else partysetiment[i] = partysetiment[i] / count[i];
+            if (count[i]==0) partysentiment[i] = 0;
+            else {
+                double value = partysentiment[i] / count[i];
+                if (value>5) value = 5;
+                else if (0<value&&value<1) value = 1;
+                partysentiment[i] = value;
+            }
         }
     }
 
@@ -122,7 +183,7 @@ public class Voter implements Serializable{
 
     public boolean getMoreTweets(DataController dc){
         if (!ratelimited){
-            StringUtils.log("Timeline Search: "+name,"purple");
+            StringUtils.log("Timeline Search: "+name+" - "+id,"purple");
             final Twitter twitter = new TwitterConnection().twitter;
             int count = 0;
             int i = 0;

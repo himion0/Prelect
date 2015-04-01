@@ -79,7 +79,7 @@ public class TextFile {
     private String formatarray(ArrayList a){
         String s = "";
         for (Object o : a){
-            s += o.toString().replace("\n","").replace("\r","")+sep;
+            s += o.toString().replace("\n","").replace("\r","").replace("|","")+sep;
         }
         return  s.substring(0,s.length()-1)+"\n";
     }

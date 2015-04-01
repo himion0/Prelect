@@ -82,17 +82,6 @@ public class DataController {
         return false;
     }
 
-    public static boolean contains(Voter voter){
-        if (voter==null||voters.isEmpty()) return false;
-        Iterator it = voters.entrySet().iterator();
-        while (it.hasNext()){
-            Map.Entry<Long,Voter> pair = (Map.Entry) it.next();
-            if (pair.getKey()==voter.id) return true;
-            it.remove();
-        }
-        return false;
-    }
-
     public void run() {
         searching.set(true);
         Search.resetCounters();
@@ -187,6 +176,8 @@ public class DataController {
 
     private ArrayList<String> statustoArray(Tweet s) {
         ArrayList<String> ar = new ArrayList<>();
+        ar.add(s.status.getUser().getName());
+        ar.add(s.status.getUser().getScreenName());
         String query = String.valueOf(s.query);
         if (query.contains("Conservatives") ||query.contains("Cameron")){
             query = "Conservatives";
@@ -203,6 +194,8 @@ public class DataController {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         ar.add(sdf.format(s.status.getCreatedAt()));
         ar.add(String.valueOf(s.status.getPlace().getName()));
+        ar.add(String.valueOf(s.sentiment));
+        ar.add(s.status.getText());
         return ar;
     }
 
@@ -211,33 +204,37 @@ public class DataController {
         ar.add(String.valueOf(v.id));
         ar.add(v.name);
         ar.add(v.screenName);
-        for (double d : v.partysetiment) {
-            if (d == -1) ar.add("0");
-            else ar.add(String.valueOf(round(d, 4)+1));
+        for (double d : v.partysentiment) {
+            ar.add(String.valueOf(round(d, 4)));
         }
         ar.add(v.location);
+        ar.add(String.valueOf(v.tweets.size()));
         return ar;
     }
 
     //Save to bin files and makes text files
     public void save() throws IOException {
-        if (tweets.size()==0){
-            log("tweets is empty, not saving...","red");
-        } else {
+        if (tweets.size()==0) log("tweets is empty, not saving...", "red");
+        else {
             new Thread(new SaveObjects(tweets, "var/tweets.bin")).run();
             TextFile rtext = new TextFile("tweets.txt");
             ArrayList<ArrayList> arr = new ArrayList<>(tweets.size());
             for (Tweet t : tweets) arr.add(statustoArray(t));
             ArrayList columns =  new ArrayList<>(
                     Arrays.asList(
+                            "Name",
+                            "ScreenName",
                             "Query",
                             "Date",
-                            "Location"
+                            "Location",
+                            "Sentiment",
+                            "Text"
                     )
             );
             rtext.saveChanges(columns, arr);
             log("Saved tweets.bin: " + tweets.size());
         }
+
         if (voters.size()==0){
             log("voters is empty, not saving...","red");
         }

@@ -24,7 +24,7 @@ public class DataRefactor {
 
     public static void main(String[] args) {
         DataRefactor dataRefactor = new DataRefactor("var/tweets.bin","var/voters.bin");
-        dataRefactor.resetVoterScans();
+        dataRefactor.updateAllVoter();
         dataRefactor.save();
     }
 
@@ -153,12 +153,16 @@ public class DataRefactor {
         }
     }
 
-    public void updateAllVoterSentiments(){
-        int i = 0;
-        for (Long l : voters.keySet()){
-            voters.get(l).update();
+    public void updateAllVoter(){
+        Iterator<Map.Entry<Long, Voter>> it = voters.entrySet().iterator();
+        while (it.hasNext()) {
+            Voter v = it.next().getValue();
+            v.update();
+            for (double d : v.partysentiment){
+                System.out.print( d + ", ");
+            }
+            System.out.println();
         }
-        System.out.println(i);
     }
 
     //    public void combineData(String folder, String genernalname){
