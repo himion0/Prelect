@@ -1,4 +1,4 @@
-package MyDM;
+package mining;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -14,7 +14,7 @@ public class Prelect {
 
     public static void main(String[] args) {
         //Read Data:
-        DataRefactor dr = new DataRefactor("var/tweets.bin","var/voters.bin");
+        DataRefactor dr = new DataRefactor("var/tweets.bin");
 
         //Assign voters
 

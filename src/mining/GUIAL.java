@@ -1,9 +1,8 @@
-package MyDM;
-
-import utils.TextFile;
+package mining;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 
 //This class deals with the button presses of GUI classs
 public class GUIAL implements ActionListener {
@@ -25,7 +24,6 @@ public class GUIAL implements ActionListener {
                 gui.searchtwitter.setText("Stop");
             } else {
                 gui.searchtwitter.setText("Search Twitter");
-                da.getExec().shutdownNow();
             }
         } else if (e.getSource() == gui.keywordsbut) {
             log("\n------Loading keywords-----");
@@ -42,7 +40,7 @@ public class GUIAL implements ActionListener {
     }
 
     boolean isValidFile(String s) {
-        boolean bol = s.matches("[\\w\\(\\)\\|]+\\.txt")&& TextFile.fileExists(s);
+        boolean bol = s.matches("[\\w\\(\\)\\|]+\\.txt")&& new File(s).exists();
         if (!bol) log("ERROR: "+s+" is not a valid file");
         return bol;
     }

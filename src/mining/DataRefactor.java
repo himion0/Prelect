@@ -1,4 +1,4 @@
-package MyDM;
+package mining;
 
 import utils.ReadObjects;
 import utils.SaveObjects;
@@ -23,33 +23,15 @@ public class DataRefactor {
     public HashMap<Long, Voter> voters;
 
     public static void main(String[] args) {
-        DataRefactor dataRefactor = new DataRefactor("var/tweets.bin","var/voters.bin");
+        DataRefactor dataRefactor = new DataRefactor("var/tweets.bin");
         dataRefactor.updateAllVoter();
         dataRefactor.save();
     }
 
-    public DataRefactor(String tweetlocation, String voterlocation) {
+    public DataRefactor(String voterlocation) {
         this.tweetlocation = tweetlocation;
-        this.voterlocation = voterlocation;
-        tweets = readTweets(tweetlocation);
         voters = readVoters(voterlocation);
-    }
-
-    ArrayList<Tweet> readTweets(String location) {
-        ReadObjects ro = null;
-        try {
-            ro = new ReadObjects(location);
-            ro.run();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        ArrayList<Tweet> ret = (ArrayList<Tweet>) ro.o;
-        if (ret!=null) {
-            StringUtils.log("Tweets: "+ ret.size(),"blue");
-            return ret;
-        }
-        System.out.println(location+" has no tweets");
-        return null;
+        tweets = createTweets();
     }
 
     HashMap<Long, Voter> readVoters(String location){
@@ -115,21 +97,8 @@ public class DataRefactor {
     }
 
     public void save(){
-        save(tweets, tweetlocation);
-        save(voters, voterlocation);
-    }
-
-    public void save(ArrayList<Tweet> tweets,String location){
         try {
-            new SaveObjects(tweets,location).run();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void save(HashMap<Long,Voter> voters,String location){
-        try {
-            new SaveObjects(voters,location).run();
+            new SaveObjects(voters, voterlocation).run();
         } catch (IOException e){
             e.printStackTrace();
         }
@@ -141,15 +110,6 @@ public class DataRefactor {
             Voter v = it.next().getValue();
             v.scannedall = false;
             v.numOfScans = 0;
-        }
-    }
-
-    public void resetVoterScans(String s) {
-        Iterator<Map.Entry<Long, Voter>> it = voters.entrySet().iterator();
-
-        while (it.hasNext()) {
-            Voter v = it.next().getValue();
-            if (v.name.trim().equals(s)) v.scannedall = false;
         }
     }
 

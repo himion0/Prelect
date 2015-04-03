@@ -1,4 +1,4 @@
-package MyDM;
+package mining;
 
 import twitter4j.*;
 import utils.StringUtils;
@@ -25,7 +25,6 @@ public class Voter implements Serializable{
     static boolean ratelimited = false;
     int numOfScans = 0;
     static RateLimitStatus rateLimitStatus;
-    static Twitter twitter = new TwitterConnection().twitter;
 
     ArrayList<Tweet> tweets = new ArrayList<>();
 
@@ -44,36 +43,8 @@ public class Voter implements Serializable{
         tweets.add(t);
     }
 
-    //Finds the mode location
-    private void updateLocation(){
-        HashMap<String, Integer> modelocation = new HashMap<>();
-
-        for (Tweet t : tweets){
-            String location = t.status.getPlace().getName();
-            if (modelocation.containsKey(location)){
-                modelocation.replace(location,modelocation.get(location)+1);
-            } else {
-                modelocation.put(location,1);
-            }
-        }
-
-        int max = 0;
-        String maxkey ="empty";
-        Iterator i = modelocation.entrySet().iterator();
-
-        while (i.hasNext()){
-            Map.Entry<String, Integer> e = (Map.Entry) i.next();
-            if (e.getValue() > max){
-                max = e.getValue();
-                maxkey = e.getKey();
-            }
-        }
-
-        location = maxkey;
-    }
-
     //Works out the sentiments of the users based on the collected tweets that they have
-    private void updateSentiment() {
+    public void update() {
         int[] count = {0, 0, 0, 0, 0};
         HashMap<String, Integer> modelocation = new HashMap<>();
 
@@ -90,95 +61,47 @@ public class Voter implements Serializable{
             }
 
             //Check sentiment:
-            double sentiment = 0;
             if (t.contains("Conservatives")||t.contains("Cameron")){
                 count[0]++;
-                sentiment = t.getSentiment()+1;
-                if (sentiment==5) {
-                    partysentiment[0] += 5.6;
-                } else if (sentiment==1) {
-                    partysentiment[0] += 0.4;
-                } else if (sentiment==2){
-                    partysentiment[0] += 1.8;
-                } else if (sentiment==4){
-                    partysentiment[0] += 3.2;
-                } else {
-                    partysentiment[0] += sentiment;
-                }
+                partysentiment[0]= t.getSentiment();
             }else if (t.contains("Labour")||t.contains("Miliband")){
                 count[1]++;
-                sentiment = t.getSentiment()+1;
-                if (sentiment==5) {
-                    partysentiment[1] += 5.6;
-                } else if (sentiment==1) {
-                    partysentiment[1] += 0.4;
-                } else if (sentiment==2){
-                    partysentiment[1] += 1.8;
-                } else if (sentiment==4){
-                    partysentiment[1] += 3.2;
-                } else {
-                    partysentiment[1] += sentiment;
-                }
+                partysentiment[1]= t.getSentiment();
             }else if (t.contains("GreenParty")||t.contains("natalie")||t.contains("Natalie")){
                 count[2]++;
-                sentiment = t.getSentiment()+1;
-                if (sentiment==5) {
-                    partysentiment[2] += 5.6;
-                } else if (sentiment==1) {
-                    partysentiment[2] += 0.4;
-                } else if (sentiment==2){
-                    partysentiment[2] += 1.8;
-                } else if (sentiment==4){
-                    partysentiment[2] += 3.2;
-                } else {
-                    partysentiment[2] += sentiment;
-                }
+                partysentiment[3]= t.getSentiment();
             }else if (t.contains("LibDems")||t.contains("nick_clegg")){
                 count[3]++;
-                sentiment = t.getSentiment()+1;
-                if (sentiment==5) {
-                    partysentiment[3] += 5.6;
-                } else if (sentiment==1) {
-                    partysentiment[3] += 0.4;
-                } else if (sentiment==2){
-                    partysentiment[3] += 1.8;
-                } else if (sentiment==4){
-                    partysentiment[3] += 3.2;
-                } else {
-                    partysentiment[3] += sentiment;
-                }
+                partysentiment[2]= t.getSentiment();
             }else if (t.contains("Farage")||t.contains("UKIP")){
                 count[4]++;
-                sentiment = t.getSentiment()+1;
-                if (sentiment==5) {
-                    partysentiment[4] += 5.6;
-                } else if (sentiment==1) {
-                    partysentiment[4] += 0.4;
-                } else if (sentiment==2){
-                    partysentiment[4] += 1.8;
-                } else if (sentiment==4){
-                    partysentiment[4] += 3.2;
-                } else {
-                    partysentiment[4] += sentiment;
-                }
+                partysentiment[2]= t.getSentiment();
             }
         }
+
+        //Mode Location:
+        int max = 0;
+        String maxkey ="empty";
+        Iterator it = modelocation.entrySet().iterator();
+
+        while (it.hasNext()){
+            Map.Entry<String, Integer> e = (Map.Entry) it.next();
+            if (e.getValue() > max){
+                max = e.getValue();
+                maxkey = e.getKey();
+            }
+        }
+
+        location = maxkey;
 
         //Calculate sentiment average
         for (int i = 0; i <count.length;i++) {
             if (count[i]==0) partysentiment[i] = 0;
             else {
                 double value = partysentiment[i] / count[i];
-                if (value>5) value = 5;
-                else if (0<value&&value<1) value = 1;
                 partysentiment[i] = value;
             }
         }
-    }
-
-    public void update(){
-        updateSentiment();
-        updateLocation();
     }
 
     public boolean getMoreTweets(DataController dc){
@@ -242,13 +165,5 @@ public class Voter implements Serializable{
             if (count!=0) StringUtils.log("FOUND " + count + " EXTRA","green");
         }
         return scannedall;
-    }
-
-    public static RateLimitStatus getRateLimitStatus(){
-        try {
-            return twitter.getUserTimeline().getRateLimitStatus();
-        } catch (TwitterException e) {
-            return e.getRateLimitStatus();
-        }
     }
 }

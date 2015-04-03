@@ -1,4 +1,4 @@
-package MyDM;
+package mining;
 
 import twitter4j.*;
 

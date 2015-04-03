@@ -1,12 +1,14 @@
-package MyDM;
+package mining;
 
 import twitter4j.Status;
-import utils.*;
+import utils.SaveObjects;
+import utils.SentimentAnalysis;
+import utils.StringUtils;
+import utils.TextFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -64,7 +66,7 @@ public class DataController {
         SentimentAnalysis.load();
         //Try load tweets:
         searchstrings = new TextFile("keywords.txt").lines;
-        DataRefactor dr = new DataRefactor("var/tweets.bin","var/voters.bin");
+        DataRefactor dr = new DataRefactor("var/voters.bin");
         tweets = dr.tweets;
         voters = dr.voters;
         if (tweets==null) tweets = new ArrayList<>();
@@ -119,6 +121,7 @@ public class DataController {
             //Check if the Status object is already contained
             for (Tweet result : tmpResults) {
                 if (!contains(result)) {
+                    if (result.status.getPlace()==null||result.status.getGeoLocation()==null)break;
                     foundsomething = true;
                     newtweets++;
                     result.getSentiment();
@@ -214,32 +217,11 @@ public class DataController {
 
     //Save to bin files and makes text files
     public void save() throws IOException {
-        if (tweets.size()==0) log("tweets is empty, not saving...", "red");
-        else {
-            new Thread(new SaveObjects(tweets, "var/tweets.bin")).run();
-            TextFile rtext = new TextFile("tweets.txt");
-            ArrayList<ArrayList> arr = new ArrayList<>(tweets.size());
-            for (Tweet t : tweets) arr.add(statustoArray(t));
-            ArrayList columns =  new ArrayList<>(
-                    Arrays.asList(
-                            "Name",
-                            "ScreenName",
-                            "Query",
-                            "Date",
-                            "Location",
-                            "Sentiment",
-                            "Text"
-                    )
-            );
-            rtext.saveChanges(columns, arr);
-            log("Saved tweets.bin: " + tweets.size());
-        }
-
         if (voters.size()==0){
             log("voters is empty, not saving...","red");
         }
         else {
-            new Thread(new SaveObjects(voters, "var/voters.bin")).run();
+            new Thread(new SaveObjects(voters, "var/voters.bin")).start();
             TextFile rtext = new TextFile("voters.txt");
             ArrayList<ArrayList> arr = new ArrayList<>(voters.size());
             Iterator it = voters.entrySet().iterator();
@@ -264,28 +246,37 @@ public class DataController {
             rtext.saveChanges(columns, arr);
             log("Saved voters.bin: " + voters.size());
         }
+        if (tweets.size()==0) log("tweets is empty, not saving...", "red");
+        else {
+            TextFile rtext = new TextFile("tweets.txt");
+            ArrayList<ArrayList> arr = new ArrayList<>(tweets.size());
+            for (Tweet t : tweets) arr.add(statustoArray(t));
+            ArrayList columns =  new ArrayList<>(
+                    Arrays.asList(
+                            "Name",
+                            "ScreenName",
+                            "Query",
+                            "Date",
+                            "Location",
+                            "Sentiment",
+                            "Text"
+                    )
+            );
+            rtext.saveChanges(columns, arr);
+            log("Saved tweets.bin: " + tweets.size());
+        }
+
+
     }
 
     //Logging to console / GUI with date and color:
     public static void log(String string,String color){
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
-        Date date = new Date();
-        String dates = StringUtils.changeColor(dateFormat.format(date) + ": ", "blue");
-        String s = dates+StringUtils.changeColor(string,color);
-        if (GUI.ISGUI)GUI.log(s);
-        else System.out.println(s);
+        StringUtils.log(string,color);
     }
 
     public static void log(String string){
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
-        Date date = new Date();
-        String dates = StringUtils.changeColor(dateFormat.format(date) + ": ", "blue");
-        if (GUI.ISGUI)GUI.log(dates+string);
-        else System.out.println(dates+string);
+        StringUtils.log(string);
     }
-
-    //Returns the thread managing object:
-    protected ExecutorService getExec(){ return searchExec; }
 
     private static String minutes(int i){
         Date d =  new Date(System.currentTimeMillis()+i*1000);

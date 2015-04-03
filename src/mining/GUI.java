@@ -1,4 +1,4 @@
-package MyDM;
+package mining;
 
 import javax.swing.*;
 import javax.swing.text.DefaultCaret;

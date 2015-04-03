@@ -1,4 +1,4 @@
-package MyDM;
+package mining;
 
 import twitter4j.Status;
 import twitter4j.User;
@@ -27,8 +27,8 @@ public class Tweet implements Serializable {
         if (sentiment==-1) {
             SentimentAnalysis sa = new SentimentAnalysis(status.getText());
             sa.run();
-            sentiment = sa.result;
-            if (sentiment == 0 || sentiment == 4 || sentiment > 4) {
+            sentiment = sa.result+1;
+            if (sentiment == 1 || sentiment == 5) {
                 StringUtils.log("Extreme Sentiment(" + String.valueOf(sentiment) + "):\n" + status.getText(), "red");
             }
         }
