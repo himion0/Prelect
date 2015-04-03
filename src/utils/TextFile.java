@@ -26,12 +26,6 @@ public class TextFile {
         createFile();
     }
 
-    public TextFile(String filename, char sep){
-        this.filename = filename;
-        this.sep = sep;
-        createFile();
-    }
-
     private void createFile(){
         File file = new File(filename);
         if(file.exists()&&!file.isDirectory()){
@@ -82,10 +76,5 @@ public class TextFile {
             s += o.toString().replace("\n","").replace("\r","").replace("|","")+sep;
         }
         return  s.substring(0,s.length()-1)+"\n";
-    }
-
-    public static boolean fileExists(String readlocation){
-        File f = new File(readlocation);
-        return f.exists();
     }
 }
