@@ -1,62 +1,102 @@
 package MyDM;
 
 import twitter4j.Status;
-import utils.ReadObjects;
 import utils.SaveObjects;
+import utils.SentimentAnalysis;
+import utils.StringUtils;
 import utils.TextFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class DataController implements Runnable {
-    public static ExecutorService searchExec;
+public class DataController {
+    ExecutorService searchExec;
     public static ArrayList<String> searchstrings;
     private static ArrayList<Search> searches;
-    public static ArrayList<Status> data;
-    long timetaken;
+    public static ArrayList<Tweet> tweets;
+    static HashMap<Long, Voter> voters;
     public String keywordfile;
+    public static AtomicBoolean searching = new AtomicBoolean(true);
+    LinkedBlockingQueue<Tweet> resultsQueue = new LinkedBlockingQueue<>();
 
-    //Hold state of the radio button to continue searching:
-    public static boolean searching = true;
-
-    public static boolean isSearching(){
-        return searching;
+    public static void main(String[] args) {
+        //Windowless application
+        System.setProperty("java.awt.headless", "true");
+        final DataController dc = new DataController();
+        //Anonymous shutdown hook for the program
+        //Runs at the end of the program to save progress to a text file
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    log("Shutting Down", "blue");
+                    dc.save();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }));
+        int wait = 0;
+        while (true) {
+            if (wait>0) {
+                log("Exceeded Rate Limit","cyan");
+                log("Restarting at " +minutes(wait), "cyan");
+                try {
+                    Thread.sleep(wait * 1000 + 1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                wait = 0;
+            } else {
+                log("SEARCHING", "blue");
+                dc.run();
+                wait = Search.getRateLimit();
+            }
+        }
     }
 
-    private static ArrayList columns =  new ArrayList<>(
-            Arrays.asList("Tweet-Text","Screen-Name","UserID","TweetID","Date","Retweet-Count","Location"));
-
-    public DataController(String keywordfile) {
-
-        data = new ArrayList<>();
-        this.keywordfile = keywordfile;
-        try {
-            searchstrings = new TextFile(keywordfile).lines;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public DataController() {
+        SentimentAnalysis.load();
+        //Try load tweets:
+        searchstrings = new TextFile("keywords.txt").lines;
+        DataRefactor dr = new DataRefactor("var/voters.bin");
+        tweets = dr.tweets;
+        voters = dr.voters;
+        if (tweets==null) tweets = new ArrayList<>();
+        if (voters==null) voters = new HashMap<>();
         searches = new ArrayList<>();
     }
 
+    public static boolean contains(Status s){
+        for (Tweet t : tweets) if (t.getID() == s.getId()) return true;
+        return false;
+    }
+
+    public static boolean contains(Tweet tweet){
+        for (Tweet t : tweets) if (t.getID()==tweet.getID()) return true;
+        return false;
+    }
+
     public void run() {
-        searching = true;
-        //Thread managing object
+        searching.set(true);
+        Search.resetCounters();
         searchExec = Executors.newFixedThreadPool(searchstrings.size());
 
-        //Records the current time:
-        timetaken = System.currentTimeMillis();
-
-        //Thread safe queue to allow multiple intputs of data:
-        LinkedBlockingQueue<Status> resultsQueue = new LinkedBlockingQueue<>();
-        System.out.println("Querying API (" + searchstrings + ")");
-        for (String s : searchstrings) {
-            Search ser = new Search(s, resultsQueue);
-            searches.add(ser);
-            searchExec.execute(ser);
+        if (searches.isEmpty()) {
+            for (String s : searchstrings) {
+                Search ser = new Search(s, resultsQueue);
+                searches.add(ser);
+                searchExec.execute(ser);
+            }
+        } else {
+            for (Search s : searches) searchExec.execute(s);
         }
 
         //Stop any new threads from being executed
@@ -64,129 +104,192 @@ public class DataController implements Runnable {
 
         boolean foundsomething = false;
         int newtweets = 0;
+        int newvoters = 0;
 
-        //Will run until all the new Tweets have been
-        //added to the data
-        while(!searchExec.isTerminated()) {
-            if(resultsQueue.peek() == null) {
+        //Contains users with new tweets
+        ArrayList<Long> updatedvoters = new ArrayList<>();
+
+        //Will run until all the new Tweets have been added to the tweets
+        while (!searchExec.isTerminated()) {
+            if (resultsQueue.peek() == null) {
                 continue;
             }
 
-            ArrayList<Status> tmpResults = new ArrayList<>();
+            ArrayList<Tweet> tmpResults = new ArrayList<>();
             resultsQueue.drainTo(tmpResults);
 
             //Check if the Status object is already contained
-            for(Status result : tmpResults) {
-                if(!data.contains(result)) {
+            for (Tweet result : tmpResults) {
+                if (!contains(result)) {
+                    //Protect from tweets with null location
+                    if (result.status.getPlace()==null||result.status.getGeoLocation()==null)break;
                     foundsomething = true;
-                    System.out.println("Found New Tweet");
                     newtweets++;
-                    data.add(result);
+                    result.getSentiment();
+                    tweets.add(result);
+
+                    //Check if the voter exists:
+                    Long voterid = result.status.getUser().getId();
+                    if (!updatedvoters.contains(voterid)) updatedvoters.add(voterid);
+
+                    if (voters.containsKey(voterid)) voters.get(voterid).addTweet(result);
+                    else {
+                        newvoters++;
+                        voters.put(voterid, new Voter(result.status.getUser(), result));
+                    }
                 }
             }
         }
 
-        //Try saving the data to var/Data.bin
-        if (foundsomething) try { save();
+        //Log Results
+        if (Search.numofq.get() != 0) {
+            log("Number of Queries: " + Search.numofq, "blue");
+            log("Searched " + Search.count, "blue");
+
+            //Try saving the tweets to var/Data.bin
+            if (foundsomething) {
+                log("Found: " + newtweets + " tweets", "green");
+                log("Found: " + newvoters + " voters", "green");
+                log("Voters Updated: " + updatedvoters.size(), "green");
+            } else log("Didn't find anything new", "red");
+        }
+
+        //Scan Timelines
+        Voter.ratelimited = false;
+        int votersscanned = 0;
+        Iterator it = voters.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Long, Voter> entry = (Map.Entry) it.next();
+            if (entry.getValue().scannedall) {
+                votersscanned++;
+            } else {
+                if (entry.getValue().getMoreTweets(this)) votersscanned++;
+                entry.getValue().update();
+            }
+        }
+        double p = (double) votersscanned / (double) voters.size();
+        log("Full Scanned Voters: " + round(p * 100, 3) + '%', "green");
+
+        for (Long l : updatedvoters) voters.get(l).update();
+        //Save
+        try {
+            save();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        if (GUI.ISGUI) {
-
-            System.out.println(GUI.ISGUI);
-            GUI.log("Found " + newtweets + " new tweets");
-            GUI.log("\nTime taken: " + String.valueOf(System.currentTimeMillis() - timetaken) + "ms");
-            GUI.log("-------Finished Search---------");
-            //Reset Button
-            GUI.searchtwitter.setText("Search Twitter");
-        }
     }
 
-    private static ArrayList<String> statustoArray(Status s) {
+    private ArrayList<String> statustoArray(Tweet s) {
         ArrayList<String> ar = new ArrayList<>();
-        ar.add(s.getText());
-        ar.add(s.getUser().getScreenName());
-        ar.add(s.getUser().getName());
-        ar.add(String.valueOf(s.getId()));
-        ar.add(String.valueOf(s.getCreatedAt()));
-        ar.add(String.valueOf(s.getRetweetCount()));
-        ar.add(String.valueOf(s.getPlace().getName()));
+        ar.add(s.status.getUser().getName());
+        ar.add(s.status.getUser().getScreenName());
+        String query = String.valueOf(s.query);
+        if (query.contains("Conservatives") ||query.contains("Cameron")){
+            query = "Conservatives";
+        }else if (query.contains("Labour")||query.contains("Miliband")){
+            query = "Labour";
+        }else if (query.contains("GreenParty")||query.contains("natalie")|| query.contains("Natalie")){
+            query = "Green";
+        }else if (query.contains("LibDems")||query.contains("nick_clegg")){
+            query = "LibDems";
+        }else if (query.contains("Farage")||query.contains("UKIP")){
+            query = "UKIP";
+        }
+        ar.add(query);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        ar.add(sdf.format(s.status.getCreatedAt()));
+        ar.add(String.valueOf(s.status.getPlace().getName()));
+        ar.add(String.valueOf(s.sentiment));
+        ar.add(s.status.getText());
         return ar;
     }
 
-    public static void savetoText(String s) {
-        //If the data is empty:
-        TextFile rtext = null;
-        try {
-            rtext = new TextFile(s);
-        } catch (IOException e) {
-            e.printStackTrace();
+    private ArrayList<String> votertoArray(Voter v){
+        ArrayList<String> ar = new ArrayList<>();
+        ar.add(String.valueOf(v.id));
+        ar.add(v.name);
+        ar.add(v.screenName);
+        for (double d : v.partysentiment) {
+            ar.add(String.valueOf(round(d, 4)));
         }
-        ArrayList<ArrayList> ar = new ArrayList<>(data.size());
-        for (Status t : data) ar.add(statustoArray(t));
-        try {
-            rtext.saveChanges(coYealumns, ar);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        log("Saved to Text File: "+s);
+        ar.add(v.location);
+        ar.add(String.valueOf(v.tweets.size()));
+        return ar;
     }
 
-    public void load() {
-        try {
-            data = new ReadObjects("var/Data.bin").o;
-            log("Loaded " + data.size() + " Tweets from: var/Data.bin");
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-    }
-
+    //Save to bin files and makes text files
     public void save() throws IOException {
-        new Thread(new SaveObjects(data,"var/Data.bin")).run();
-    }
-
-    public static void log(String s){
-        if (GUI.ISGUI)GUI.log(s);
-        else System.out.println(s);
-    }
-
-    public static ExecutorService getExec(){return searchExec;}
-
-    public static void main(String[] args) throws InterruptedException {
-        System.setProperty("java.awt.headless", "true");
-        final DataController dc = new DataController(args[0]);
-        dc.load();
-
-        //Anonymous shutdown hook for the program
-        //Runs at the end of the program to save progress to a text file
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (!dc.getExec().isTerminated()){}
-                    log("Datasize: "+dc.data.size());
-                    dc.save();
-                    dc.savetoText("tweets.txt");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }));
-
-        while (true) {
-            dc.run();
-            if (!searching) {
-                int wait = Search.exception.getRateLimitStatus().getSecondsUntilReset();
-                while (wait>0){
-                    wait = Search.exception.getRateLimitStatus().getSecondsUntilReset();
-                    System.out.println("Exceeded Rate Limit! Waiting: "+wait+"secs");
-                    //Wait a minute or a second depending on current limit:
-                    if (wait<=60) Thread.sleep(1000);
-                    else Thread.sleep(60000);
-                }
-
-            }
+        if (voters.size()==0){
+            log("voters is empty, not saving...","red");
         }
+        else {
+            new Thread(new SaveObjects(voters, "var/voters.bin")).start();
+            TextFile rtext = new TextFile("voters.txt");
+            ArrayList<ArrayList> arr = new ArrayList<>(voters.size());
+            Iterator it = voters.entrySet().iterator();
+            while (it.hasNext()){
+                Map.Entry<Long, Voter> pair = (Map.Entry) it.next();
+                arr.add(votertoArray(pair.getValue()));
+            }
+            ArrayList columns =  new ArrayList<>(
+                    Arrays.asList(
+                            "ID",
+                            "Name",
+                            "Screen Name",
+                            "Conservative",
+                            "Labour",
+                            "Green",
+                            "Lib-Dem",
+                            "UKIP",
+                            "Location",
+                            "Tweets"
+                    )
+            );
+            rtext.saveChanges(columns, arr);
+            log("Saved voters.bin: " + voters.size());
+        }
+        if (tweets.size()==0) log("tweets is empty, not saving...", "red");
+        else {
+            TextFile rtext = new TextFile("tweets.txt");
+            ArrayList<ArrayList> arr = new ArrayList<>(tweets.size());
+            for (Tweet t : tweets) arr.add(statustoArray(t));
+            ArrayList columns =  new ArrayList<>(
+                    Arrays.asList(
+                            "Name",
+                            "ScreenName",
+                            "Query",
+                            "Date",
+                            "Location",
+                            "Sentiment",
+                            "Text"
+                    )
+            );
+            rtext.saveChanges(columns, arr);
+            log("Saved tweets.bin: " + tweets.size());
+        }
+
+
+    }
+
+    //Logging to console / GUI with date and color:
+    public static void log(String string,String color){
+        StringUtils.log(string,color);
+    }
+
+    public static void log(String string){
+        StringUtils.log(string);
+    }
+
+    private static String minutes(int i){
+        Date d =  new Date(System.currentTimeMillis()+i*1000);
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+        return sdf.format(d);
+    }
+
+    public static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+        BigDecimal bd = new BigDecimal(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
     }
 }

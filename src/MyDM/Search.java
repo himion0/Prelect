@@ -3,21 +3,23 @@ package MyDM;
 import twitter4j.*;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Searches the twitter API:
  *
- * IMPORTANT: Change geoLocation location for other locations
+ * IMPORTANT: Change geoLocation location to other locations
  */
 
 public class Search implements Runnable {
     private static final Twitter twitter = new TwitterConnection().twitter;
     private static GeoLocation geoLocation = new GeoLocation(55.16807, -4.41317);
-    private static double radius = 523.26;
-    public static TwitterException exception;
-    public LinkedBlockingQueue resultsQueue;
+    private static double radius = 543.26;
+    LinkedBlockingQueue resultsQueue;
     public String s;
-    public int numtweets = 0;
+    static AtomicInteger count, numofq, ratelimit;
+    Query query;
+
 
     public Search(String s, LinkedBlockingQueue resultsQueue) {
         this.resultsQueue = resultsQueue;
@@ -26,39 +28,49 @@ public class Search implements Runnable {
 
     @Override
     public void run() {
-        while (DataController.isSearching()) {
-
-
-            long lowestTweetId = Long.MAX_VALUE;
-            Query query = new Query(s);
-            query.setCount(100);
-            query.setGeoCode(geoLocation, radius, Query.KILOMETERS);
-            query.setSince("2014-07-01");
-            QueryResult queryResult;
+        long maxID = Long.MAX_VALUE;
+        query = new Query(s);
+        query.setCount(100);
+        query.setMaxId(maxID);
+        query.setGeoCode(geoLocation, radius, Query.KILOMETERS);
+        while (DataController.searching.get()) {
+            QueryResult queryResult = null;
             try {
                 queryResult = twitter.search(query);
-                for (Status status : queryResult.getTweets()) {
-                    resultsQueue.add(status);
-                    numtweets++;
-                    if (status.getId() < lowestTweetId) {
-                        lowestTweetId = status.getId();
-                        query.setMaxId(lowestTweetId);
-                    }
-                }
+                numofq.set(numofq.incrementAndGet());
                 //If something goes wrong:
             } catch (TwitterException e) {
                 //If the rate limit is exceeded:
                 if (e.exceededRateLimitation()) {
-                    exception = e;
-                    int wait = e.getRateLimitStatus().getSecondsUntilReset();
-                    if (GUI.ISGUI) GUI.log("Exceeded Rate Limit: " + wait + "secs");
-                    DataController.searching = false;
-                    DataController.getExec().shutdownNow();
-                } else {
-                    return;
+                    ratelimit.set(e.getRateLimitStatus().getSecondsUntilReset());
+                    DataController.searching.set(false);
+                } else e.printStackTrace();
+            }
+            if (queryResult!=null){
+                for (Status status : queryResult.getTweets()) {
+                    count.set(count.incrementAndGet());
+                    resultsQueue.add(new Tweet(status, s));
+                    if (status.getId() < maxID) {
+                        maxID = status.getId();
+                        query.setMaxId(maxID);
+                    }
                 }
             }
         }
+    }
+
+    public static int getRateLimit(){
+        try {
+            return twitter.search(new Query("asda")).getRateLimitStatus().getSecondsUntilReset();
+        } catch (TwitterException e) {
+            return e.getRateLimitStatus().getSecondsUntilReset();
+        }
+    }
+
+    public static void resetCounters(){
+        numofq = new AtomicInteger(0);
+        count = new AtomicInteger(0);
+        ratelimit = new AtomicInteger(0);
     }
 }
 

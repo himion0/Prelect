@@ -17,67 +17,64 @@ public class TextFile {
     private final String filename;
     public ArrayList<String> lines;
     private final static Charset ENCODING = StandardCharsets.UTF_8;
+    private char sep = '|';
 
     //Loads the specified textfile. If the readlocation doesn't exist, it will
     //create it
-    public TextFile(String filename) throws IOException {
-        File file = new File(filename);
+    public TextFile(String filename) {
         this.filename = filename;
+        createFile();
+    }
+
+    private void createFile(){
+        File file = new File(filename);
         if(file.exists()&&!file.isDirectory()){
             readFile();
         } else {
-            file.createNewFile();
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-
     }
 
-    @Override
-    public String toString(){
-        return filename;
-    }
-
-    /*
-    * Reads each line from the text file and adds it to the lines ArrayList
-    *
-    * TODO:
-    * Implement ignoring comment character (e.g. '#')
-    * */
-    void readFile() throws IOException {
-        System.out.println("Reading File: "+filename);
+    void readFile() {
         Path path = Paths.get(filename);
         lines = new ArrayList<>();
-        Scanner scanner =  new Scanner(path, ENCODING.name());
-        while (scanner.hasNextLine()){
-            String s = scanner.nextLine();
-            lines.add(s);
+        Scanner scanner = null;
+        try {
+            scanner = new Scanner(path, ENCODING.name());
+            while (scanner.hasNextLine()){
+                String s = scanner.nextLine();
+                lines.add(s);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
     }
 
+    public void saveChanges(ArrayList columns, ArrayList<ArrayList> data) {
+        try {
+            writer = new PrintWriter(new FileWriter(filename, false));
+            String s = "";
+            s += formatarray(columns);
 
-    public void saveChanges(ArrayList columns, ArrayList<ArrayList> data) throws IOException {
-        System.out.println("Saving to File: "+filename);
-        writer = new PrintWriter(new FileWriter(filename, false));
-        String s = "";
-        s += formatarray(columns);
-
-        for (ArrayList a : data){
-            s += formatarray(a);
+            for (ArrayList a : data){
+                s += formatarray(a);
+            }
+            writer.write(s);
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        writer.write(s);
-        writer.close();
     }
 
     private String formatarray(ArrayList a){
         String s = "";
         for (Object o : a){
-            s += o.toString().replace("\n","").replace("\r","")+"|";
+            s += o.toString().replace("\n","").replace("\r","").replace("|","")+sep;
         }
         return  s.substring(0,s.length()-1)+"\n";
-    }
-
-    public static boolean fileExists(String readlocation){
-        File f = new File(readlocation);
-        return f.exists();
     }
 }
