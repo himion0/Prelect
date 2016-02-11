@@ -1,3 +1,11 @@
+IMPORTANT
+=======
+
+This system is still under devlopment.
+
+The project was part of my final year undergraduate dissertation, the report which can be found in the root directory of the repo under the name "Report.pdf"
+
+
 Tweet-Miner
 =======
 
